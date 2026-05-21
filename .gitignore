@@ -1,0 +1,48 @@
+# Entornos Virtuales
+.venv/
+venv/
+env/
+
+# Compilaciones de PyInstaller
+build/
+dist/
+releases/
+*.spec
+
+# Archivos temporales y de caché de Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Bases de Datos locales y Claves (¡Seguridad!)
+*.key
+*.db
+*.duckdb
+
+# Datos Pesados Locales y Exportaciones
+*.zip
+*.pdf
+Informe_takeout*/
+datos_crudos/
+outputs/
+
+# Seguridad (¡NUNCA SUBIR!)
+.env
+.env.*
+
+# Basura de IA y HTMLs locales
+gemini-code-*.html
+Instrucciones_*.html
+
+# Datos crudos y configuraciones personales
+*.json
+!package.json
+
+# 1. Sacar todos los archivos SQL del rastreo de Git (se quedan en tu disco local)
+git rm --cached *.sql
+
+# 2. Sellar el paquete de limpieza
+git commit -m "chore: Eliminar scripts SQL de la raíz del repositorio"
+
+# 3. Subir el cambio para que desaparezcan de GitHub
+git push origin main

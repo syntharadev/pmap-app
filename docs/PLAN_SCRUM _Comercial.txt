@@ -1,0 +1,41 @@
+PARTE 3: PLAN SCRUM DE EJECUCIÓN (Roadmap de Producto)
+
+Para materializar esta arquitectura en un producto real publicable y facturable, aquí está el plan estratégico en 3 Sprints:
+Sprint 1: Consolidación Open-Core (Semanas 1-2)
+
+    Backlog:
+
+        Asegurar que server.py responde perfectamente al nuevo Dashboard unificado.
+
+        Implementar pytest para toda la lógica de analyzer.py y aislar cualquier dependencia pesada.
+
+        Limpiar el repositorio y subir la versión "Community" a GitHub bajo licencia MIT (o similar).
+
+Sprint 2: Infraestructura Sovereign Pro (Semanas 3-4)
+
+    Backlog:
+
+        Crear cuenta en Gumroad. Configurar los siguientes productos de suscripción/pago único:
+        - Opción A: Licencia Perpetua "Indie" (Pago Único): 79€ (Freelancers, investigadores independientes, estudiantes). Incluye binario .exe/Linux, actualizaciones menores, soporte comunitario.
+        - Opción B: Licencia "Professional" (Suscripción Anual): 124€/año (Profesionales, estudios pequeños, consultores). Incluye actualizaciones mayores, soporte prioritario email, acceso a funciones beta.
+        - Opción C: Licencia "Team/Enterprise" (Pago Anual): 249€/año (PYMES industriales, departamentos de ingeniería). Incluye 3 máquinas, integración CI/CD, despliegue corporativo.
+
+        Desarrollar el script local license_manager.py que hace un POST a la API de validación para activar la clave y guarda un JWT firmado en la máquina del usuario.
+
+        Implementar las funcionalidades Pro (ej. Exportación a PDF con ReportLab o conexión a Ollama local).
+
+Sprint 3: Publicación y CI/CD (Semanas 5-6)
+
+    Backlog:
+
+        Configurar GitHub Actions para ejecutar tests E2E con Playwright cada vez que haya un push.
+
+        Empaquetar la aplicación. Como es Python, la mejor forma de distribuirla sin conflictos de entorno es usando PyInstaller o Docker (ofreciendo un Dockerfile limpio que levanta el puerto 8000).
+
+        Lanzamiento: Publicar en foros de desarrolladores enfocando en el "Dolor del Contexto": "¿Tus LLMs olvidan tu código tras 20 mensajes? PMAP.APP lo audita en local."
+
+CONCLUSIÓN E INSTRUCCIONES
+
+No he dejado nada al azar. He eliminado la estructura basada en pestañas porque en una autopsia necesitas ver la entrada, el proceso y la salida de un solo vistazo.
+
+El archivo HTML proporcionado arriba es la cristalización de ese concepto. Reemplaza tu actual PMAP_APP_INICIAL.html con este código. Verás que la interfaz es infinitamente superior, incluye las lógicas de conexión con tu backend y sienta las bases visuales y funcionales para el modelo de monetización (el candado PRO).

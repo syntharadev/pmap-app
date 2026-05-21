@@ -1,0 +1,19 @@
+~/Proyectos/PMAP.APP/
+├── pmap_core/                # Repositorio principal (Capa 1)
+│   ├── pmap/                 # Lógica del motor y API
+│   │   ├── __init__.py
+│   │   ├── analyzer.py       # Motor forense unificado
+│   │   ├── cst_diff.py       # Analizador Tree-sitter
+│   │   ├── models.py         # Definición de esquemas Pydantic
+│   │   ├── parser.py         # Purificador de DAGs
+│   │   ├── semantic_engine.py # Motor de amnesia (AVX-Safe)
+│   │   ├── server.py         # API FastAPI
+│   │   └── writer.py         # Generador de reportes .md
+│   ├── requirements.txt      # Dependencias del sistema
+│   └── README.md
+├── docs/                     # Documentación y manuales
+│   └── Instrucciones_Codificado_PMAP.md
+├── outputs/                  # Reportes generados (9 archivos .md)
+├── PAMAP_APP_INICIAL.html    # Dashboard Táctico (Capa 2)
+├── pmap_forensic.duckdb      # Base de datos (Triple Almacén)
+└── .venv/                    # Entorno virtual aislado
