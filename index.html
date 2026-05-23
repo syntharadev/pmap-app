@@ -305,6 +305,7 @@ http://googleusercontent.com/immersive_entry_chip/0
         }
 
         let pyodideInstance = null;
+        let engineReady = false;
 
         function log(m, s = 'info') {
             const c = document.getElementById('console');
@@ -329,6 +330,7 @@ http://googleusercontent.com/immersive_entry_chip/0
                 pyodideInstance.FS.writeFile("/home/pyodide/pmap_core/pmap/analyzer.py", code);
                 pyodideInstance.FS.writeFile("/home/pyodide/pmap_core/pmap/__init__.py", "");
 
+                engineReady = true;
                 log("PMAP Engine listo para autopsia Zero-Knowledge.", "success");
                 document.getElementById('status').innerText = "STANDBY";
             } catch (e) {
@@ -339,8 +341,8 @@ http://googleusercontent.com/immersive_entry_chip/0
 
         async function uploadAudit(file) {
             if(!file) return;
-            if(!pyodideInstance) {
-                alert("Pyodide todavía se está inicializando. Por favor, espera unos segundos.");
+            if(!engineReady) {
+                alert("El motor PMAP se está inicializando. Por favor, espera unos segundos hasta que el log indique que está listo.");
                 return;
             }
             document.getElementById('status').innerText = "PROCESANDO";
