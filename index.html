@@ -138,6 +138,12 @@
                         <span>Privacidad 100% Zero-Knowledge activa.</span>
                     </div>
                 </div>
+
+                <!-- Botón de Reinicio -->
+                <button onclick="resetAnalysis()" class="w-full mt-3 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 font-bold p-2.5 rounded-lg text-center text-[10px] tracking-wide transition-all flex items-center justify-center space-x-1.5 shadow-sm">
+                    <i class="ph ph-arrow-counter-clockwise text-xs text-amber-500"></i>
+                    <span>REINICIAR AUTOPSIA</span>
+                </button>
             </div>
         </section>
 
@@ -411,6 +417,20 @@ run_forensic_analysis(chat_text_input)
             chart.data.labels = d.map(x => x.turn);
             chart.data.datasets[0].data = d.map(x => x.memory_accuracy_percent);
             chart.update();
+        }
+
+        function resetAnalysis() {
+            document.getElementById('console').innerHTML = '';
+            document.getElementById('feed').innerHTML = '';
+            document.getElementById('reports-list').innerHTML = '<div>Esperando inyección de datos...</div>';
+            document.getElementById('status').innerText = 'STANDBY';
+            if (chart) {
+                chart.data.labels = [];
+                chart.data.datasets[0].data = [];
+                chart.update();
+            }
+            document.getElementById('jsonUpload').value = '';
+            log("Estado de análisis reiniciado. Listo para una nueva autopsia.");
         }
 
         function openRegisterModal() {
