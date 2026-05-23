@@ -1,5 +1,5 @@
 ========================================================================
-                      NODO SOBERANO PMAP.APP - FOSS RELEASE
+                      NODO SOBERANO PMAP.APP - BROWSER RELEASE
 ========================================================================
 
 PMAP.APP (Plataforma de Memoria y Análisis de Proyectos) es una 
@@ -7,89 +7,70 @@ herramienta local de auditoría forense diseñada para diagnosticar y
 corregir la degradación atencional, amnesia estructural y alucinaciones 
 de modelos de lenguaje (LLMs) durante sesiones de programación complejas.
 
-Esta distribución ha sido compilada bajo la licencia 'GNU AGPLv3' para 
-ejecución soberana 100% local, garantizando privacidad absoluta (Zero-Knowledge).
-PMAP.APP es ahora 100% gratuito y de código abierto.
+Esta distribución ha sido adaptada para ejecución soberana 100% en el 
+navegador (Client-Side), garantizando privacidad absoluta (Zero-Knowledge).
+PMAP.APP es 100% gratuito, de código abierto y libre de dependencias de red.
 
 ------------------------------------------------------------------------
-1. REQUISITOS DE INSTALACIÓN
+1. ARQUITECTURA SOBERANA (CLIENT-SIDE)
 ------------------------------------------------------------------------
 
-- Un sistema compatible con la arquitectura del ejecutable (Linux x86_64).
-- Una clave de API de Google Gemini (GOOGLE_API_KEY) para el motor 
-  de purificación estructural.
-- Una clave de registro gratuita emitida desde https://pmap.app.
+A diferencia de las versiones tradicionales basadas en servidores backend
+locales o peticiones en la nube, esta edición corre enteramente dentro de tu 
+navegador mediante WebAssembly:
+
+- Pyodide: Entorno virtual de Python compilado para ejecutarse en el navegador.
+- SQLite: Motor relacional embebido local para análisis de transacciones.
+- NetworkX: Librería matemática para el análisis del grafo de dependencias AST.
+
+Tus datos (historiales de chat y código) nunca viajan por internet,
+procesándose directamente en la memoria RAM local.
 
 ------------------------------------------------------------------------
-2. ESTRUCTURA DE DIRECTORIOS
+2. INSTRUCCIONES DE USO EN 3 PASOS
 ------------------------------------------------------------------------
 
-Al iniciar el nodo, se mantendrá la siguiente topología de archivos en 
-el directorio de la aplicación:
+Paso 1: Obtén tu evidencia (Bookmarklet Extractor)
+  1. Activa la barra de marcadores en tu navegador (Ctrl+Shift+B o Cmd+Shift+B).
+  2. Haz clic derecho sobre ella y selecciona "Nuevo marcador..." o "Añadir página...".
+  3. Asígnale el nombre: "🚀 PMAP Extract".
+  4. En el campo "URL" o "Dirección", pega el código del bookmarklet disponible
+     en el panel lateral de PMAP.APP (o en Instrucciones_PMAP_APP.html).
+  5. Ve a tu chat activo con la IA (ChatGPT, Claude, Gemini) y haz clic en
+     el marcador. Purificará el historial y lo descargará como un archivo '.json'.
+  *(También puedes subir exportaciones oficiales de ChatGPT o Google Takeout).*
 
-  [Raíz de PMAP.APP]
-    ├── PMAP_Sovereign (Ejecutable principal)
-    ├── user.key       (Archivo plano con tu email de registro gratuito)
-    ├── .env           (Configuración de variables de entorno opcional)
-    ├── datos_crudos/  (Carpeta permanente de almacenamiento de sesiones)
-    │     ├── [Nombre_Sesion].txt  (Historial crudo)
-    │     └── [Nombre_Sesion].json (Historial purificado estructurado)
-    └── outputs/       (Reportes Markdown del análisis forense)
+Paso 2: Carga tu archivo
+  1. Abre el panel de PMAP.APP en tu navegador.
+  2. Arrastra y suelta o sube el archivo '.json' descargado utilizando el
+     cajón de entrada analítica de la web.
 
-*IMPORTANTE: Todos los archivos .json extraídos o subidos se guardarán 
- permanentemente en la carpeta 'datos_crudos' en la raíz de la aplicación.*
-
-------------------------------------------------------------------------
-3. CONFIGURACIÓN INICIAL Y ARRANQUE
-------------------------------------------------------------------------
-
-Paso 1: Registrar tu Email
-  1. Regístrate en https://pmap.app ingresando tu email en el formulario.
-  2. Crea un archivo llamado 'user.key' en el mismo directorio que el 
-     ejecutable.
-  3. Abre el archivo, escribe tu dirección de correo electrónico registrada dentro y guárdalo.
-
-Paso 2: Configurar la API Key de Gemini
-  PMAP.APP utiliza Gemini para purificar los chats de IA sin pérdidas. 
-  Debes exportar tu clave como variable de entorno o crear un archivo '.env' 
-  junto al ejecutable con la siguiente línea:
-  
-    GOOGLE_API_KEY=tu_clave_de_gemini_aquí
-
-Paso 3: Arrancar el Servidor
-  Dale permisos de ejecución al binario e inícialo:
-  
-    $ chmod +x PMAP_Sovereign
-    $ ./PMAP_Sovereign
-
-  El servidor levantará un nodo web interactivo local en:
-  
-    http://127.0.0.1:8000
+Paso 3: Auditoría Forense
+  1. El motor de WebAssembly procesará de forma inmediata las métricas.
+  2. Observa el índice de degradación atencional, el mapa de amnesia AST y
+     las vulnerabilidades detectadas cronológicamente en el feed de auditoría.
 
 ------------------------------------------------------------------------
-4. INYECCIÓN DIRECTA (MARCADOR/BOOKMARKLET)
+3. CÓMO LEVANTAR EL NODO LOCALMENTE
 ------------------------------------------------------------------------
 
-PMAP.APP incluye un inyector directo compatible con navegadores Firefox y Chrome.
+PMAP.APP no requiere un backend de Python activo ni base de datos externa.
+Puedes ejecutar la interfaz web estática de tres formas sencillas:
 
-¿Cómo instalarlo?
-  1. Abre el Dashboard web (http://127.0.0.1:8000) tras iniciar el nodo.
-  2. En el panel lateral izquierdo "Inyección Directa (Firefox)", verás el
-     código del marcador.
-  3. Haz clic en "COPIAR" para copiar el código JavaScript al portapapeles.
-  4. En tu navegador, activa la barra de marcadores (Ctrl+Shift+B).
-  5. Clic derecho en la barra -> "Nuevo marcador..." (o Añadir página).
-  6. Escribe un nombre intuitivo como: "🚀 Enviar a PMAP"
-  7. En el campo "Dirección" o "URL", pega el código copiado.
-  8. Guarda el marcador.
+Opción A: Servidor Web Local (Recomendado)
+  Levanta un servidor estático rápido desde la terminal en el directorio raíz:
 
-¿Cómo usarlo?
-  1. Ve a cualquier chat de IA (ChatGPT, Claude, Gemini, etc.) que quieras auditar.
-  2. Haz clic en tu marcador "🚀 Enviar a PMAP".
-  3. Introduce el nombre de la sesión cuando se te solicite.
-  4. ¡Listo! El chat se extraerá, estructurará en formato .json y se guardará
-     directamente en la carpeta 'datos_crudos' del servidor. El análisis
-     forense se actualizará automáticamente en el dashboard.
+    $ python3 -m http.server 8080
+
+  Y abre tu navegador en: http://localhost:8080
+
+Opción B: GitHub Pages / Alojamiento Estático
+  Simplemente sube este repositorio a tu cuenta de GitHub, habilita GitHub Pages
+  desde la pestaña "Settings -> Pages", ¡y listo! Se desplegará automáticamente.
+
+Opción C: Apertura Directa
+  Incluso puedes hacer doble clic sobre 'index.html' en tu gestor de archivos
+  y el motor correrá localmente sin levantar ningún servidor web.
 
 ------------------------------------------------------------------------
 SOPORTE Y COLABORACIÓN

@@ -9,6 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Fira+Code&family=Inter:wght@400;700&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #020617; color: #e2e8f0; overflow-y: auto; overflow-x: hidden; }
@@ -42,6 +43,9 @@
               </div>
             </div>
             <nav class="hidden sm:flex items-center space-x-4">
+                <button onclick="openRegisterModal()" class="text-xs font-bold text-slate-400 hover:text-white transition-colors flex items-center focus:outline-none">
+                    <i class="ph ph-shield-check text-lg mr-1"></i> Guía de Inicio
+                </button>
                 <a href="Instrucciones_PMAP_APP.html" target="_blank" class="text-xs font-bold text-slate-400 hover:text-white transition-colors flex items-center">
                     <i class="ph ph-book-open text-lg mr-1"></i> Funcionamiento
                 </a>
@@ -59,50 +63,79 @@
     <main class="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-grow">
         <section class="lg:col-span-3 flex flex-col space-y-4">
             <div class="glass-panel p-4 rounded-lg flex-grow flex flex-col space-y-4">
-                <h2 class="text-sm font-bold border-b border-slate-700 pb-2">INYECCIÓN FORENSE</h2>
+                <h2 class="text-sm font-bold border-b border-slate-700 pb-2">AUDITORÍA FORENSE SOBERANA</h2>
                 
-                <div class="space-y-3">
-                    <p class="text-[10px] text-slate-400 uppercase font-bold">1. Obtener Datos</p>
-                    <button onclick="copyPrompt('full')" class="w-full bg-slate-900 border border-slate-700 p-2 rounded text-left hover:border-amber-500 transition-colors">
-                        <span class="block text-xs font-bold text-amber-500">PROMPT: COMPLETA</span>
-                    </button>
-                    <button onclick="copyPrompt('delta')" class="w-full bg-slate-900 border border-slate-700 p-2 rounded text-left hover:border-blue-500 transition-colors">
-                        <span class="block text-xs font-bold text-blue-400">PROMPT: 24 HORAS</span>
-                    </button>
+                <!-- Paso 1: Obtén tu evidencia -->
+                <div class="space-y-2">
+                    <div class="flex items-center space-x-2">
+                        <span class="bg-amber-500/10 text-amber-500 font-bold px-1.5 py-0.5 rounded text-[10px]">1</span>
+                        <p class="text-[10px] text-slate-200 uppercase font-bold">Obtén tu evidencia</p>
+                    </div>
+                    <p class="text-[9px] text-slate-400 leading-relaxed">
+                        Usa nuestro <strong>Bookmarklet Extractor</strong> desde tu chat de IA para descargar tu archivo <code>.json</code> purificado, o solicita tu exportación de datos oficial (ChatGPT/Google Takeout).
+                    </p>
+                    
+                    <div class="bg-slate-950 border border-slate-800 p-2 rounded-lg space-y-1.5 mt-1">
+                        <span class="text-[8px] text-slate-500 uppercase font-mono block">Bookmarklet "PMAP Extract":</span>
+                        <div class="flex items-center space-x-1">
+                            <input type="text" id="sidebar-bookmarklet-code" readonly 
+                                value="javascript:(function(){const projName=prompt('PMAP.APP - Nombre del archivo de sesión:','sesion_pmap');if(!projName){return;}const rawText=document.body.innerText;const lines=rawText.split('\n');let currentRole='user';let currentContent=[];const turns=[];for(let line of lines){const lineStripped=line.trim();const lineLower=lineStripped.toLowerCase();if(lineLower.startsWith('user:')||lineLower.startsWith('tú:')||lineLower.startsWith('usuario:')||lineLower.startsWith('you:')){if(currentContent.length){turns.push({role:currentRole,content:currentContent.join('\n').trim()});}currentRole='user';currentContent=[line.substring(line.indexOf(':')+1)];}else if(lineLower.startsWith('model:')||lineLower.startsWith('assistant:')||lineLower.startsWith('gemini:')||lineLower.startsWith('chatgpt:')||lineLower.startsWith('claude:')){if(currentContent.length){turns.push({role:currentRole,content:currentContent.join('\n').trim()});}currentRole='model';currentContent=[line.substring(line.indexOf(':')+1)];}else{currentContent.push(line);}}if(currentContent.length){turns.push({role:currentRole,content:currentContent.join('\n').trim()});}const blob=new Blob([JSON.stringify({turns:turns},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=projName+'.json';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);alert('✅ [ÉXITO] Historial purificado y descargado como JSON.\n\nSúbelo ahora a PMAP.APP para iniciar la autopsia forense client-side.');})()"
+                                class="flex-grow bg-black text-[8px] text-green-400 font-mono p-1 rounded border border-slate-800 truncate cursor-pointer" 
+                                onclick="this.select();navigator.clipboard.writeText(this.value);log('Bookmarklet copiado.','success');">
+                            <button onclick="document.getElementById('sidebar-bookmarklet-code').select();navigator.clipboard.writeText(document.getElementById('sidebar-bookmarklet-code').value);log('Bookmarklet copiado.','success');" 
+                                class="bg-green-600/80 hover:bg-green-500 text-white text-[8px] font-bold px-2 py-1 rounded transition-colors whitespace-nowrap">
+                                COPIAR
+                            </button>
+                        </div>
+                        <details class="text-[8px] text-slate-500">
+                            <summary class="cursor-pointer hover:text-slate-300">¿Cómo se instala?</summary>
+                            <ol class="mt-1 space-y-0.5 pl-2.5 list-decimal text-[8px]">
+                                <li>Muestra tu barra de marcadores (Ctrl+Shift+B)</li>
+                                <li>Clic derecho → "Añadir marcador..."</li>
+                                <li>Nombre: 🚀 PMAP Extract</li>
+                                <li>Dirección: Pega el código copiado</li>
+                                <li>En tu chat de IA, haz clic en el marcador</li>
+                            </ol>
+                        </details>
+                    </div>
+
+                    <div class="flex space-x-1.5 pt-1.5">
+                        <button onclick="copyPrompt('full')" class="flex-1 bg-slate-900 border border-slate-800 p-1.5 rounded hover:border-amber-500/50 transition-colors text-[9px] font-bold text-amber-500/80 text-center">
+                            PROMPT: COMPLETA
+                        </button>
+                        <button onclick="copyPrompt('delta')" class="flex-1 bg-slate-900 border border-slate-800 p-1.5 rounded hover:border-blue-500/50 transition-colors text-[9px] font-bold text-blue-400/80 text-center">
+                            PROMPT: 24H
+                        </button>
+                    </div>
                 </div>
 
-                <div class="space-y-2">
-                    <p class="text-[10px] text-slate-400 uppercase font-bold">2. Guardar y Cargar</p>
-                    <label class="block cursor-pointer bg-amber-600 hover:bg-amber-500 text-slate-900 font-bold p-4 rounded text-center text-xs transition-colors">
-                        SUBIR ARCHIVO .JSON
+                <!-- Paso 2: Sube el archivo -->
+                <div class="space-y-2 pt-2 border-t border-slate-800/80">
+                    <div class="flex items-center space-x-2">
+                        <span class="bg-amber-500/10 text-amber-500 font-bold px-1.5 py-0.5 rounded text-[10px]">2</span>
+                        <p class="text-[10px] text-slate-200 uppercase font-bold">Sube el archivo</p>
+                    </div>
+                    <p class="text-[9px] text-slate-400 leading-relaxed">
+                        Arrastra y suelta tu archivo <code>.json</code> o <code>.zip</code> en este cajón analítico local.
+                    </p>
+                    <label class="block cursor-pointer bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-extrabold p-3 rounded-lg text-center text-[10px] tracking-wide transition-all shadow-sm">
+                        SUBIR ARCHIVO (.JSON)
                         <input type="file" id="jsonUpload" accept=".json" class="hidden" onchange="uploadAudit(this.files[0])">
                     </label>
                 </div>
 
-                <div class="space-y-2">
-                    <p class="text-[10px] text-slate-400 uppercase font-bold">3. Inyección Directa (Firefox)</p>
-                    <div class="bg-slate-900 border border-slate-700 p-3 rounded space-y-2">
-                        <p class="text-[10px] text-slate-400">Arrastra este enlace a tu barra de marcadores de Firefox:</p>
-                        <div class="flex items-center space-x-2">
-                            <input type="text" id="bookmarklet-code" readonly 
-                                value="javascript:(function(){const projName=prompt('PMAP.APP - Nombre de la sesión:');if(!projName){return;}const rawText=document.body.innerText;const formData=new FormData();formData.append('project_name',projName);formData.append('raw_text',rawText);fetch('http://127.0.0.1:8000/api/v1/audit/auto-analyze',{method:'POST',body:formData}).then(res=>{if(res.ok){alert('✅ [ÉXITO] Transmisión completada. Datos inyectados en DuckDB.');}else{alert('❌ [ERROR] El servidor rechazó los datos.');}}).catch(err=>alert('❌ [ERROR] No hay conexión con el NUC: '+err));})()"
-                                class="flex-grow bg-black text-[9px] text-green-400 font-mono p-2 rounded border border-slate-700 truncate cursor-pointer" 
-                                onclick="this.select();navigator.clipboard.writeText(this.value);log('Bookmarklet copiado.','success');">
-                            <button onclick="document.getElementById('bookmarklet-code').select();navigator.clipboard.writeText(document.getElementById('bookmarklet-code').value);log('Bookmarklet copiado.','success');" 
-                                class="bg-green-600 hover:bg-green-500 text-white text-[10px] font-bold px-3 py-2 rounded transition-colors whitespace-nowrap">
-                                COPIAR
-                            </button>
-                        </div>
-                        <details class="text-[9px] text-slate-500">
-                            <summary class="cursor-pointer hover:text-slate-300 transition-colors">Instrucciones de instalación</summary>
-                            <ol class="mt-1 space-y-1 pl-3 list-decimal">
-                                <li>Muestra la barra de marcadores (Ctrl+Shift+B)</li>
-                                <li>Clic derecho → "Nuevo marcador..."</li>
-                                <li>Nombre: 🚀 Enviar a PMAP</li>
-                                <li>Dirección: Pega el código copiado</li>
-                                <li>Desde cualquier chat de IA, haz clic en el marcador</li>
-                            </ol>
-                        </details>
+                <!-- Paso 3: Auditoría Soberana -->
+                <div class="space-y-2 pt-2 border-t border-slate-800/80">
+                    <div class="flex items-center space-x-2">
+                        <span class="bg-emerald-500/10 text-emerald-400 font-bold px-1.5 py-0.5 rounded text-[10px]">3</span>
+                        <p class="text-[10px] text-slate-200 uppercase font-bold">Auditoría Soberana</p>
+                    </div>
+                    <p class="text-[9px] text-slate-400 leading-relaxed">
+                        El motor WebAssembly procesará tu historial y el <em>Amnesia Index</em> localmente en tu memoria RAM. Tus datos nunca viajan por internet.
+                    </p>
+                    <div class="bg-emerald-950/20 border border-emerald-500/10 rounded-lg p-2 flex items-center space-x-2 text-[9px] text-emerald-400/80">
+                        <i class="ph ph-shield-check text-lg"></i>
+                        <span>Privacidad 100% Zero-Knowledge activa.</span>
                     </div>
                 </div>
             </div>
@@ -147,72 +180,78 @@
 
     <!-- Modal de Registro de Usuario y Obtención de Clave -->
     <div id="register-modal" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
-        <div class="bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-6 w-full max-w-md shadow-2xl relative overflow-hidden">
+        <div class="bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-6 w-full max-w-lg shadow-2xl relative overflow-hidden">
             <div class="absolute -top-10 -right-10 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl"></div>
             
-            <div class="flex items-center space-x-3 mb-4">
-                <div class="bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20 text-amber-500">
-                    <i class="ph ph-download-simple text-2xl"></i>
+            <div class="flex justify-between items-start mb-6">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20 text-amber-500">
+                        <i class="ph ph-shield-check text-2xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-white leading-tight">Guía de Inicio Soberano</h2>
+                        <p class="text-xs text-slate-500 uppercase tracking-widest font-mono mt-0.5">Auditoría 100% Client-Side</p>
+                    </div>
                 </div>
-                <div>
-                    <h2 class="text-lg font-bold text-white leading-tight">Obtener PMAP Sovereign</h2>
-                    <p class="text-xs text-slate-500 uppercase tracking-widest font-mono mt-0.5">Acceso Gratuito Gated</p>
-                </div>
+                <button onclick="closeRegisterModal()" class="text-slate-400 hover:text-white transition-colors">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
             </div>
             
-            <!-- Formulario de Registro -->
-            <div id="reg-form-step" class="space-y-4">
-                <p class="text-xs text-slate-400 leading-relaxed">
-                    Registra tu email para obtener el binario soberano y activar tu nodo forense de forma 100% gratuita y libre.
+            <div class="space-y-4 text-xs text-slate-300">
+                <p class="leading-relaxed text-slate-400">
+                    PMAP Sovereign procesa tus conversaciones de IA directamente en tu navegador de forma Zero-Knowledge. Tus datos jamás salen de tu ordenador.
                 </p>
-                <div class="space-y-2">
-                    <label class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Tu Correo Electrónico</label>
-                    <input type="email" id="reg-email" class="w-full bg-slate-950 text-slate-200 p-3 rounded-lg border border-slate-800 focus:border-amber-500 outline-none text-sm transition-colors font-mono" placeholder="usuario@correo.com">
-                </div>
-                <div class="flex justify-end space-x-3 pt-2">
-                    <button onclick="closeRegisterModal()" class="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white transition-colors">Cerrar</button>
-                    <button onclick="registrarUsuario()" id="btn-submit-reg" class="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-bold rounded-lg text-xs transition-all duration-300">OBTENER PMAP SOVEREIGN</button>
-                </div>
-            </div>
-
-            <!-- Paso de Clave Obtenida / Éxito -->
-            <div id="reg-success-step" class="hidden space-y-4">
-                <div class="bg-emerald-500/10 border border-emerald-500/20 p-3.5 rounded-xl text-emerald-400 text-xs flex items-start space-x-2.5">
-                    <i class="ph ph-check-circle text-lg mt-0.5 flex-shrink-0"></i>
-                    <div>
-                        <span class="font-bold block">¡Registro Exitoso!</span>
-                        <span>Has sido autorizado en la base de datos de PMAP Sovereign.</span>
+                
+                <div class="space-y-3 mt-4">
+                    <!-- Paso 1 -->
+                    <div class="bg-slate-900/40 border border-slate-800 p-3 rounded-lg flex items-start space-x-3">
+                        <div class="bg-amber-500/10 text-amber-500 font-bold px-2.5 py-1 rounded text-xs">1</div>
+                        <div class="space-y-1">
+                            <h4 class="font-bold text-white">Obtén tu evidencia</h4>
+                            <p class="text-slate-400">Utiliza nuestro Bookmarklet extractor <strong>"PMAP Extract"</strong> directamente en la pestaña del chat de tu IA (ChatGPT, Claude, Gemini) para descargar instantáneamente tu conversación como un archivo <code>.json</code>. O solicita la exportación de datos oficial (Google Takeout / ChatGPT Export).</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Paso 2 -->
+                    <div class="bg-slate-900/40 border border-slate-800 p-3 rounded-lg flex items-start space-x-3">
+                        <div class="bg-amber-500/10 text-amber-500 font-bold px-2.5 py-1 rounded text-xs">2</div>
+                        <div class="space-y-1">
+                            <h4 class="font-bold text-white">Sube el archivo</h4>
+                            <p class="text-slate-400">Arrastra y suelta tu archivo <code>.json</code> purificado en el cajón de carga analítica de la web.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Paso 3 -->
+                    <div class="bg-slate-900/40 border border-slate-800 p-3 rounded-lg flex items-start space-x-3">
+                        <div class="bg-amber-500/10 text-amber-500 font-bold px-2.5 py-1 rounded text-xs">3</div>
+                        <div class="space-y-1">
+                            <h4 class="font-bold text-white">Auditoría Soberana</h4>
+                            <p class="text-slate-400">El motor de WebAssembly (Pyodide + SQLite) procesará las métricas, dependencias AST y el <em>Amnesia Index</em> localmente en tu memoria RAM. Privacidad 100% garantizada.</p>
+                        </div>
                     </div>
                 </div>
                 
-                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-center space-y-3">
-                    <p class="text-xs text-slate-300">Descarga tu binario soberano para tu plataforma:</p>
-                    <div class="flex flex-col space-y-2">
-                        <a href="https://pmap.app/releases/PMAP_Sovereign_Linux.zip" class="w-full py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-amber-500 font-bold rounded-lg text-xs transition-all duration-300 flex items-center justify-center space-x-1.5 shadow-sm">
-                            <i class="ph ph-linux-logo"></i> <span>Descargar para Linux (.zip)</span>
-                        </a>
-                        <a href="https://pmap.app/releases/PMAP_Sovereign_Windows.zip" class="w-full py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-blue-400 font-bold rounded-lg text-xs transition-all duration-300 flex items-center justify-center space-x-1.5 shadow-sm">
-                            <i class="ph ph-windows-logo"></i> <span>Descargar para Windows (.zip)</span>
-                        </a>
-                        <a href="https://pmap.app/releases/PMAP_Sovereign_Mac.zip" class="w-full py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 font-bold rounded-lg text-xs transition-all duration-300 flex items-center justify-center space-x-1.5 shadow-sm">
-                            <i class="ph ph-apple-logo"></i> <span>Descargar para macOS (.zip)</span>
-                        </a>
+                <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-2 mt-4">
+                    <span class="text-[10px] text-slate-500 uppercase tracking-widest font-mono block">Código del Bookmarklet Extractor</span>
+                    <div class="flex items-center space-x-2">
+                        <input type="text" id="modal-bookmarklet-code" readonly 
+                            value="javascript:(function(){const projName=prompt('PMAP.APP - Nombre del archivo de sesión:','sesion_pmap');if(!projName){return;}const rawText=document.body.innerText;const lines=rawText.split('\n');let currentRole='user';let currentContent=[];const turns=[];for(let line of lines){const lineStripped=line.trim();const lineLower=lineStripped.toLowerCase();if(lineLower.startsWith('user:')||lineLower.startsWith('tú:')||lineLower.startsWith('usuario:')||lineLower.startsWith('you:')){if(currentContent.length){turns.push({role:currentRole,content:currentContent.join('\n').trim()});}currentRole='user';currentContent=[line.substring(line.indexOf(':')+1)];}else if(lineLower.startsWith('model:')||lineLower.startsWith('assistant:')||lineLower.startsWith('gemini:')||lineLower.startsWith('chatgpt:')||lineLower.startsWith('claude:')){if(currentContent.length){turns.push({role:currentRole,content:currentContent.join('\n').trim()});}currentRole='model';currentContent=[line.substring(line.indexOf(':')+1)];}else{currentContent.push(line);}}if(currentContent.length){turns.push({role:currentRole,content:currentContent.join('\n').trim()});}const blob=new Blob([JSON.stringify({turns:turns},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=projName+'.json';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);alert('✅ [ÉXITO] Historial purificado y descargado como JSON.\n\nSúbelo ahora a PMAP.APP para iniciar la autopsia forense client-side.');})()"
+                            class="flex-grow bg-black text-[9px] text-green-400 font-mono p-2 rounded border border-slate-700 truncate cursor-pointer" 
+                            onclick="this.select();navigator.clipboard.writeText(this.value);log('Bookmarklet copiado.','success');">
+                        <button onclick="document.getElementById('modal-bookmarklet-code').select();navigator.clipboard.writeText(document.getElementById('modal-bookmarklet-code').value);log('Bookmarklet copiado.','success');" 
+                            class="bg-green-600 hover:bg-green-500 text-white text-[10px] font-bold px-3 py-2 rounded transition-colors whitespace-nowrap">
+                            COPIAR
+                        </button>
                     </div>
                 </div>
-
-                <div class="bg-slate-950/80 border border-slate-800 p-3.5 rounded-xl space-y-2.5 text-xs text-slate-400">
-                    <span class="font-bold text-slate-300 flex items-center"><i class="ph ph-info mr-1.5 text-amber-500"></i> Instrucciones de Activación</span>
-                    <ol class="list-decimal list-inside space-y-1.5 pl-1">
-                        <li>Crea un archivo llamado <code class="text-amber-400 font-mono font-bold bg-slate-900 px-1 py-0.5 rounded">user.key</code> en la carpeta de tu binario.</li>
-                        <li>Abre el archivo, escribe tu email dentro: <code id="reg-email-display" class="text-green-400 font-mono font-bold">tu-email@correo.com</code> y guárdalo.</li>
-                        <li>Inicia <code class="text-slate-300 font-mono bg-slate-900 px-1 py-0.5 rounded">PMAP_Sovereign</code> para autorizar tu acceso.</li>
-                    </ol>
-                </div>
-
-                <div class="flex justify-end pt-2">
-                    <button onclick="closeRegisterModal()" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-lg text-xs transition-colors">Cerrar</button>
-                </div>
             </div>
+            
+            <div class="flex justify-end pt-4 mt-2">
+                <button onclick="closeRegisterModal()" class="px-5 py-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-bold rounded-lg text-xs transition-all duration-300 shadow-sm">ENTENDIDO</button>
+            </div>
+        </div>
+    </div>
         </div>
     </div>
 
@@ -265,6 +304,8 @@ http://googleusercontent.com/immersive_entry_chip/0
             log("Prompt copiado. Inyéctalo en el LLM.");
         }
 
+        let pyodideInstance = null;
+
         function log(m, s = 'info') {
             const c = document.getElementById('console');
             const color = s === 'err' ? 'text-red-500' : (s === 'success' ? 'text-green-500' : 'text-slate-400');
@@ -272,31 +313,75 @@ http://googleusercontent.com/immersive_entry_chip/0
             c.scrollTop = c.scrollHeight;
         }
 
+        async function initPyodide() {
+            log("Iniciando entorno virtual Python (WebAssembly)...");
+            document.getElementById('status').innerText = "INICIALIZANDO PYODIDE";
+            try {
+                pyodideInstance = await loadPyodide();
+                log("Pyodide inicializado. Cargando librería 'networkx'...");
+                await pyodideInstance.loadPackage("networkx");
+                log("Librería 'networkx' cargada correctamente.");
+
+                log("Cargando motor forense analítico embebido...");
+                const code = document.getElementById("python-analyzer").textContent;
+
+                pyodideInstance.FS.mkdirTree("pmap_core/pmap");
+                pyodideInstance.FS.writeFile("pmap_core/pmap/analyzer.py", code);
+                pyodideInstance.FS.writeFile("pmap_core/pmap/__init__.py", "");
+
+                log("PMAP Engine listo para autopsia Zero-Knowledge.", "success");
+                document.getElementById('status').innerText = "STANDBY";
+            } catch (e) {
+                log("Fallo al inicializar Pyodide: " + e.message, "err");
+                document.getElementById('status').innerText = "ERROR WASM";
+            }
+        }
+
         async function uploadAudit(file) {
             if(!file) return;
-            document.getElementById('status').innerText = "PROCESANDO";
-            const fd = new FormData();
-            fd.append("file", file);
-            
-            try {
-                const res = await fetch("http://127.0.0.1:8000/api/v1/audit/upload", { method: "POST", body: fd });
-                const data = await res.json();
-                if(!res.ok) throw new Error(data.error || "Error HTTP " + res.status);
-                
-                updateUI(data);
-                document.getElementById('status').innerText = "COMPLETADO";
-                log(`Auditoría finalizada: ${data.meta.new_turns_audited} turnos procesados.`, 'success');
-                
-                if (data.system_meta && data.system_meta.output_path) {
-                    document.getElementById('reports-list').innerHTML = `
-                        <div class="text-green-500 mb-2">Directorios generados:</div>
-                        <div class="break-all">${data.system_meta.output_path}</div>
-                    `;
-                }
-            } catch(e) {
-                document.getElementById('status').innerText = "ERROR";
-                log(e.message, 'err');
+            if(!pyodideInstance) {
+                alert("Pyodide todavía se está inicializando. Por favor, espera unos segundos.");
+                return;
             }
+            document.getElementById('status').innerText = "PROCESANDO";
+            log(`Leyendo archivo de sesión: ${file.name}...`);
+            
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const chatText = e.target.result;
+                try {
+                    log("Ejecutando autopsia forense client-side (Zero-Knowledge)...");
+                    
+                    pyodideInstance.globals.set("chat_text_input", chatText);
+                    const pyCode = `
+import sys
+sys.path.append('.')
+from pmap_core.pmap.analyzer import run_forensic_analysis
+run_forensic_analysis(chat_text_input)
+`;
+                    const resultJsonStr = await pyodideInstance.runPythonAsync(pyCode);
+                    const data = JSON.parse(resultJsonStr);
+                    
+                    updateUI(data);
+                    document.getElementById('status').innerText = "COMPLETADO";
+                    log(`Auditoría finalizada: ${data.meta.new_turns_audited} turnos procesados.`, 'success');
+                    
+                    document.getElementById('reports-list').innerHTML = `
+                        <div class="text-emerald-500 mb-2">Reporte Generado (Client-Side):</div>
+                        <div class="bg-slate-950 p-2.5 rounded border border-slate-800 space-y-1">
+                            <p><span class="text-slate-500">Sesión:</span> ${file.name.replace(/\.[^/.]+$/, "")}</p>
+                            <p><span class="text-slate-500">Turnos Auditados:</span> ${data.meta.new_turns_audited}</p>
+                            <p><span class="text-slate-500">Tokens Totales:</span> ${data.meta.total_tokens_consumed}</p>
+                            <p><span class="text-slate-500">Alerta Temprana:</span> <span class="${data.early_warning.is_critical ? 'text-red-400 font-bold' : 'text-emerald-400 font-bold'}">${data.early_warning.index}</span></p>
+                            <p class="text-slate-400 italic mt-1.5">${data.early_warning.reason}</p>
+                        </div>
+                    `;
+                } catch(e) {
+                    document.getElementById('status').innerText = "ERROR";
+                    log("Error en el análisis forense: " + e.message, 'err');
+                }
+            };
+            reader.readAsText(file);
             document.getElementById('jsonUpload').value = '';
         }
 
@@ -305,7 +390,7 @@ http://googleusercontent.com/immersive_entry_chip/0
             feed.innerHTML = '';
             
             if (!data.vulnerabilities || data.vulnerabilities.length === 0) {
-                feed.innerHTML = `<div class="text-green-500">Arquitectura limpia. Cero hallazgos.</div>`;
+                feed.innerHTML = `<div class="text-emerald-500 font-bold">Arquitectura limpia. Cero hallazgos.</div>`;
             } else {
                 data.vulnerabilities.forEach(v => {
                     const bColor = v.severity === 'CRITICAL' ? 'border-red-500' : (v.severity === 'HIGH' ? 'border-amber-500' : 'border-blue-500');
@@ -339,17 +424,14 @@ http://googleusercontent.com/immersive_entry_chip/0
         let supabaseClient = null;
 
         async function initSupabase() {
+            // Configuración pública por defecto o mock
             try {
-                const res = await fetch("http://127.0.0.1:8000/api/v1/config/supabase");
-                const config = await res.json();
-                if (config.url && config.anon_key && !config.url.includes("TU_PROYECTO") && typeof supabase !== 'undefined') {
-                    supabaseClient = supabase.createClient(config.url, config.anon_key);
-                    console.log("Supabase inicializado correctamente.");
-                } else {
-                    console.warn("Usando configuración de registro offline simulada (Falta config Supabase).");
+                if (typeof supabase !== 'undefined') {
+                    // Si se desea conectar directamente a un Supabase público, se puede configurar aquí
+                    console.log("Supabase listo en modo client-side.");
                 }
             } catch (e) {
-                console.log("Servidor offline o inicializando sin API local.");
+                console.log("Inicialización Supabase offline.");
             }
         }
 
@@ -364,75 +446,361 @@ http://googleusercontent.com/immersive_entry_chip/0
             btn.innerText = "Registrando...";
             btn.disabled = true;
 
-            let dbSuccess = false;
-            try {
-                if (supabaseClient) {
-                    const { data, error } = await supabaseClient
-                        .from('registered_users')
-                        .insert([{ email: emailInput }]);
-                    
-                    if (error) {
-                        // Tratar la clave duplicada como éxito para que el usuario pueda volver a ver el enlace de descarga e instrucciones
-                        if (error.code === '23505') { 
-                            dbSuccess = true;
-                        } else {
-                            throw error;
-                        }
-                    } else {
-                        dbSuccess = true;
-                    }
-                } else {
-                    dbSuccess = true;
-                }
-            } catch (err) {
-                console.error("Supabase insert error:", err);
-                alert("Error al registrar: " + (err.message || err));
-                btn.innerText = "OBTENER PMAP SOVEREIGN";
-                btn.disabled = false;
-                return;
-            }
-
-            if (dbSuccess) {
+            // En el modelo 100% serverless, permitimos el acceso y descarga directamente
+            setTimeout(() => {
                 document.getElementById('reg-email-display').innerText = emailInput;
                 document.getElementById('reg-form-step').classList.add('hidden');
                 document.getElementById('reg-success-step').classList.remove('hidden');
-                log(`Usuario '${emailInput}' registrado correctamente en la base de datos.`, 'success');
-            }
-            
-            btn.innerText = "OBTENER PMAP SOVEREIGN";
-            btn.disabled = false;
+                log(`Usuario '${emailInput}' registrado (Sovereign Edition).`, 'success');
+                btn.innerText = "OBTENER PMAP SOVEREIGN";
+                btn.disabled = false;
+            }, 500);
         }
 
         function unlockProUI() {
             const btnReg = document.getElementById('btn-register');
             if (btnReg) {
-                btnReg.innerHTML = `<i class="ph ph-check-circle text-emerald-400 text-sm"></i> <span>NODO AUTORIZADO</span>`;
+                btnReg.innerHTML = `<i class="ph ph-check-circle text-emerald-400 text-sm"></i> <span>NODO SOBERANO</span>`;
                 btnReg.className = "bg-emerald-950/80 hover:bg-emerald-900/80 text-emerald-400 px-4 py-2 rounded-lg text-xs font-bold border border-emerald-500/20 transition-all flex items-center space-x-1.5 cursor-default";
                 btnReg.onclick = (e) => { e.preventDefault(); };
             }
-            log("Nodo forense autorizado y desbloqueado.", "success");
-        }
-
-        async function checkInitialStatus() {
-            try {
-                const res = await fetch("http://127.0.0.1:8000/api/v1/license/status");
-                const data = await res.json();
-                if (data.is_pro) { unlockProUI(); }
-            } catch (e) { console.log("Servidor local no disponible para verificar estado inicial."); }
+            log("Nodo forense client-side activo.", "success");
         }
 
         window.onload = () => {
-            initSupabase().then(() => {
-                checkInitialStatus();
-            });
+            unlockProUI();
+            initSupabase();
+            initPyodide();
+            
             const ctx = document.getElementById('metricsChart').getContext('2d');
             chart = new Chart(ctx, {
                 type: 'line',
                 data: { labels: [], datasets: [{ label: '% Precisión', data: [], borderColor: '#10b981', tension: 0.4 }] },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
             });
-            log("Interfaz PMAP.APP lista.");
+            log("Interfaz PMAP Sovereign lista.");
         };
+    </script>
+    <script id="python-analyzer" type="text/plain">
+# Copyright (c) 2026 syntharadev (syntharadev@gmail.com)
+# Todos los derechos reservados. Licencia: GNU AGPLv3
+import gc
+import math
+try:
+    import duckdb
+    HAS_DUCKDB = True
+except ImportError:
+    import sqlite3
+    HAS_DUCKDB = False
+import ast
+import re
+import networkx as nx
+from typing import List, Dict, Any
+
+
+class PMAPEngine:
+    def __init__(self, max_context_window: int = 128000):
+        if HAS_DUCKDB:
+            self.db_path = "pmap_forensic.duckdb"
+        else:
+            self.db_path = ":memory:"
+        self.max_context = max_context_window
+        self.ast_inventory = set()
+        # [FIX] Inicialización del grafo de dependencias (antes inexistente)
+        self.graph = nx.DiGraph()
+        self._init_db()
+
+    def _init_db(self):
+        if HAS_DUCKDB:
+            with duckdb.connect(self.db_path) as con:
+                # [!] AJUSTE DE HARDWARE: Forzar a DuckDB a respetar el límite de memoria del NUC
+                con.execute("SET memory_limit = '2GB';")
+                con.execute("SET threads = 2;")
+                con.execute("CREATE TABLE IF NOT EXISTS history (idx INTEGER PRIMARY KEY, role VARCHAR, content TEXT, tk INTEGER)")
+                con.execute("CREATE TABLE IF NOT EXISTS vulns (idx INTEGER, severity VARCHAR, type VARCHAR, description TEXT)")
+        else:
+            # Fallback a SQLite en WebAssembly / Entorno local sin DuckDB
+            with sqlite3.connect(self.db_path) as con:
+                con.execute("CREATE TABLE IF NOT EXISTS history (idx INTEGER PRIMARY KEY, role VARCHAR, content TEXT, tk INTEGER)")
+                con.execute("CREATE TABLE IF NOT EXISTS vulns (idx INTEGER, severity VARCHAR, type VARCHAR, description TEXT)")
+
+    def ingest_structured_data(self, turns: List[Dict[str, Any]]):
+        if HAS_DUCKDB:
+            with duckdb.connect(self.db_path) as con:
+                con.execute("SET memory_limit = '2GB';")
+                con.execute("SET threads = 2;")
+                con.execute("DELETE FROM history")
+                for i, t in enumerate(turns):
+                    tk = len(t['content']) // 4
+                    con.execute("""
+                        INSERT INTO history VALUES (?, ?, ?, ?) 
+                        ON CONFLICT (idx) DO UPDATE SET role=EXCLUDED.role, content=EXCLUDED.content, tk=EXCLUDED.tk
+                    """, [i, t['role'], t['content'], tk])
+        else:
+            with sqlite3.connect(self.db_path) as con:
+                con.execute("DELETE FROM history")
+                for i, t in enumerate(turns):
+                    tk = len(t['content']) // 4
+                    con.execute("""
+                        INSERT INTO history VALUES (?, ?, ?, ?) 
+                        ON CONFLICT (idx) DO UPDATE SET role=excluded.role, content=excluded.content, tk=excluded.tk
+                    """, [i, t['role'], t['content'], tk])
+
+    def ingest_json_history(self, file_path: str):
+        """Ingesta directa desde archivo JSON para el CLI."""
+        import json
+        with open(file_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        # Soportar tanto formato plano como formato con clave 'turns'
+        if isinstance(data, dict) and "turns" in data:
+            data = data["turns"]
+        self.ingest_structured_data(data)
+
+    def _analyze_ast_and_graph(self, content: str) -> Dict[str, Any]:
+        """
+        [FIX] Método unificado que extrae el inventario AST y construye
+        el grafo de dependencias simultáneamente.
+        Antes existía como _analyze_ast() sin integración de grafo.
+        """
+        # Patrón hexadecimal: \x60 es la comilla invertida. Evita la corrupción al copiar.
+        pattern = r'\x60{3}(?:[a-zA-Z]*)\n?(.*?)\x60{3}'
+        blocks = re.findall(pattern, content, re.DOTALL)
+        code = "\n".join(blocks)
+        inventory = set()
+        complexity = 1
+        
+        if not code: 
+            return {"inventory": inventory, "complexity": complexity}
+        
+        try:
+            tree = ast.parse(code)
+            current_scope = None
+            
+            for node in ast.walk(tree):
+                if isinstance(node, ast.ClassDef):
+                    inventory.add(node.name)
+                    self.graph.add_node(node.name, type="class")
+                    current_scope = node.name
+                    # Registrar dependencias de herencia
+                    for base in node.bases:
+                        if isinstance(base, ast.Name):
+                            self.graph.add_edge(node.name, base.id)
+                            
+                elif isinstance(node, ast.FunctionDef):
+                    inventory.add(node.name)
+                    self.graph.add_node(node.name, type="function")
+                    # Si la función está dentro de una clase, registrar dependencia
+                    if current_scope:
+                        self.graph.add_edge(current_scope, node.name)
+                        
+                elif isinstance(node, (ast.If, ast.For, ast.While, ast.Try, ast.With)):
+                    complexity += 1
+                    
+                # Detectar llamadas a funciones para construir el grafo de dependencias
+                elif isinstance(node, ast.Call):
+                    if isinstance(node.func, ast.Name) and node.func.id in inventory:
+                        # Función conocida llamada desde el contexto actual
+                        self.graph.add_edge("__caller__", node.func.id)
+                    elif isinstance(node.func, ast.Attribute):
+                        if isinstance(node.func.value, ast.Name):
+                            target = f"{node.func.value.id}.{node.func.attr}"
+                            self.graph.add_node(target, type="method_call")
+                            
+        except SyntaxError:
+            pass
+            
+        return {"inventory": inventory, "complexity": complexity}
+
+    def run_forensic_audit(self) -> Dict[str, Any]:
+        vulnerabilities = []
+        chart = []
+        total_tk = 0
+        self.ast_inventory.clear()
+        self.graph.clear()
+
+        # Diccionarios de heurística
+        fallos_cognitivos = ["lo siento", "mis disculpas", "caí en la trampa", "tienes razón", "me equivoqué", "disculpa"]
+        alarmas_tecnicas = ["error", "timeout", "fallo", "corrupción", "no funciona", "incidencia", "crítico"]
+        
+        # Detección de pereza del modelo y resúmenes ilegales
+        patrones_pereza = [
+            "generado en iteraciones previas", "resto del código", "código omitido", 
+            "código anterior", "generado anteriormente", "sin cambios", "resto de la clase",
+            "..."  # Elipsis sueltas en código
+        ]
+
+        db_conn = duckdb.connect(self.db_path) if HAS_DUCKDB else sqlite3.connect(self.db_path)
+        with db_conn as con:
+            if HAS_DUCKDB:
+                con.execute("SET memory_limit = '2GB';")
+                con.execute("SET threads = 2;")
+            con.execute("DELETE FROM vulns")
+            rows = con.execute("SELECT * FROM history ORDER BY idx").fetchall()
+            estado_error_previo = False
+
+            for row in rows:
+                idx, role, content, tk = row
+                total_tk += tk
+                
+                # Métrica de degradación atencional (más estricta)
+                decay = max(0, (total_tk - (self.max_context * 0.15))) / (self.max_context * 0.85)
+                acc = max(10.0, 100 - (math.pow(decay, 1.8) * 70)) if total_tk > (self.max_context * 0.15) else 99.9
+                chart.append({"turn": idx, "accumulated_tokens": total_tk, "memory_accuracy_percent": round(acc, 2)})
+                
+                content_lower = content.lower()
+
+                if role == "user":
+                    if any(alarma in content_lower for alarma in alarmas_tecnicas):
+                        estado_error_previo = True
+                
+                elif role in ["model", "assistant"]:
+                    ast_data = self._analyze_ast_and_graph(content)
+                    
+                    # 1. Detección de Pereza Algorítmica (Model Laziness)
+                    if any(patron in content_lower for patron in patrones_pereza):
+                        desc = "El modelo ha resumido u omitido código mediante elipsis o marcadores descriptivos. Ruptura de integridad."
+                        vulnerabilities.append({"turn": idx, "severity": "CRITICAL", "type": "Evasión de Contexto", "description": desc})
+
+                    # 2. Impacto de Grafo
+                    for node in ast_data["inventory"]:
+                        if self.graph.has_node(node):
+                            impacto = self.graph.in_degree(node)
+                            if impacto > 3:
+                                desc = f"Nodo crítico '{node}' modificado. Impacto potencial en {impacto} dependencias."
+                                vulnerabilities.append({"turn": idx, "severity": "HIGH", "type": "Riesgo de Impacto", "description": desc})
+
+                    # 3. Deuda Técnica
+                    if ast_data["complexity"] > 10:
+                        vulnerabilities.append({"turn": idx, "severity": "HIGH", "type": "Deuda Técnica", "description": f"Complejidad Ciclomática ({ast_data['complexity']}). Posible Parche Ciego."})
+                    
+                    # 4. Amnesia Estructural
+                    if ast_data["inventory"]:
+                        lost = self.ast_inventory - ast_data["inventory"]
+                        if lost and len(ast_data["inventory"]) > 0:
+                            vulnerabilities.append({"turn": idx, "severity": "CRITICAL", "type": "Amnesia Estructural", "description": f"Entidades AST desaparecidas: {', '.join(lost)}"})
+                        self.ast_inventory.update(ast_data["inventory"])
+
+                    # 5. Colapso Cognitivo
+                    if any(patron in content_lower for patron in fallos_cognitivos):
+                        vulnerabilities.append({"turn": idx, "severity": "MEDIUM", "type": "Colapso Cognitivo", "description": "Patrón de complacencia detectado."})
+
+                    # 6. Parche Ciego
+                    if estado_error_previo:
+                        vulnerabilities.append({"turn": idx, "severity": "HIGH", "type": "Parche Ciego Funcional", "description": "Bucle de error continuo. Implementación reactiva detectada."})
+                        
+                    estado_error_previo = False
+
+            # Persistir vulnerabilidades
+            for i, v in enumerate(vulnerabilities):
+                con.execute(
+                    "INSERT INTO vulns VALUES (?, ?, ?, ?)",
+                    [v["turn"], v["severity"], v["type"], v["description"]]
+                )
+
+            graph_summary = {
+                "nodes": list(self.graph.nodes()),
+                "edges": list(self.graph.edges()),
+                "critical_nodes": [n for n, d in self.graph.in_degree() if d > 2]
+            }
+
+            # Liberación activa de memoria RAM
+            gc.collect()
+
+            return {
+                "meta": {"new_turns_audited": len(rows), "total_tokens_consumed": total_tk},
+                "vulnerabilities": vulnerabilities,
+                "chart_data": chart,
+                "graph_data": graph_summary
+            }
+
+
+def run_forensic_analysis(chat_text: str) -> str:
+    """
+    Función de entrada global limpia adaptada para Pyodide (Wasm) en el navegador.
+    Acepta un string (ya sea JSON o texto crudo) y devuelve los resultados formateados en JSON.
+    """
+    import json
+    
+    # 1. Intentar parsear como JSON
+    try:
+        data = json.loads(chat_text)
+        if isinstance(data, dict) and "turns" in data:
+            turns = data["turns"]
+        elif isinstance(data, list):
+            turns = data
+        else:
+            turns = [{"role": "user", "content": chat_text}]
+    except Exception:
+        # Fallback a parseo heurístico si es texto plano crudo
+        turns = []
+        lines = chat_text.split("\n")
+        current_role = "user"
+        current_content = []
+        for line in lines:
+            line_stripped = line.strip()
+            line_lower = line_stripped.lower()
+            if line_lower.startswith("user:") or line_lower.startswith("tú:") or line_lower.startswith("usuario:") or line_lower.startswith("**tú**:") or line_lower.startswith("**usuario**:") or line_lower.startswith("**user**:"):
+                if current_content:
+                    turns.append({"role": current_role, "content": "\n".join(current_content).strip()})
+                current_role = "user"
+                # Extraer texto tras el delimitador de rol
+                parts = line.split(":", 1)
+                current_content = [parts[1]] if len(parts) > 1 else []
+            elif line_lower.startswith("model:") or line_lower.startswith("assistant:") or line_lower.startswith("gemini:") or line_lower.startswith("modelo:") or line_lower.startswith("**modelo**:") or line_lower.startswith("**gemini**:") or line_lower.startswith("**assistant**:"):
+                if current_content:
+                    turns.append({"role": current_role, "content": "\n".join(current_content).strip()})
+                current_role = "model"
+                # Extraer texto tras el delimitador de rol
+                parts = line.split(":", 1)
+                current_content = [parts[1]] if len(parts) > 1 else []
+            else:
+                current_content.append(line)
+        if current_content:
+            turns.append({"role": current_role, "content": "\n".join(current_content).strip()})
+        if not turns:
+            turns = [{"role": "user", "content": chat_text}]
+
+    # 2. Purificar la estructura
+    flat_turns = []
+    for i, t in enumerate(turns):
+        role = t.get("role", "user")
+        if "parts" in t:
+            content = "".join([p.get("text", "") for p in t["parts"]])
+        else:
+            content = t.get("content", "")
+        
+        # Mapear rol a 'user' o 'model'
+        clean_role = "model" if any(x in str(role).lower() for x in ["model", "assistant", "modelo", "asistente"]) else "user"
+        flat_turns.append({
+            "role": clean_role,
+            "content": content
+        })
+
+    # 3. Inicializar el motor (SQLite en memoria automático bajo Pyodide)
+    engine = PMAPEngine()
+    engine.ingest_structured_data(flat_turns)
+    results = engine.run_forensic_audit()
+
+    # 4. Derivar indicadores de alerta temprana (early warning)
+    critical_vulns = [v for v in results.get("vulnerabilities", []) if v.get("severity") == "CRITICAL"]
+    total_tokens = results.get("meta", {}).get("total_tokens_consumed", 0)
+
+    if len(critical_vulns) > 0 or total_tokens > (0.8 * 128000):
+        index = "CRITICAL"
+        is_critical = True
+        reason = "Se detectaron patrones de amnesia estructural o un volumen de tokens crítico que amenaza la retención del contexto."
+    else:
+        index = "OPTIMAL"
+        is_critical = False
+        reason = "Integridad estructural y retención cognitiva dentro de parámetros saludables."
+
+    results["early_warning"] = {
+        "index": index,
+        "is_critical": is_critical,
+        "reason": reason
+    }
+
+    return json.dumps(results, ensure_ascii=False)
     </script>
 </body>
 </html>

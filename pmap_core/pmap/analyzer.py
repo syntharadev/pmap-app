@@ -2,7 +2,12 @@
 # Todos los derechos reservados. Licencia: GNU AGPLv3
 import gc
 import math
-import duckdb
+try:
+    import duckdb
+    HAS_DUCKDB = True
+except ImportError:
+    import sqlite3
+    HAS_DUCKDB = False
 import ast
 import re
 import networkx as nx
@@ -11,7 +16,10 @@ from typing import List, Dict, Any
 
 class PMAPEngine:
     def __init__(self, max_context_window: int = 128000):
-        self.db_path = "pmap_forensic.duckdb"
+        if HAS_DUCKDB:
+            self.db_path = "pmap_forensic.duckdb"
+        else:
+            self.db_path = ":memory:"
         self.max_context = max_context_window
         self.ast_inventory = set()
         # [FIX] Inicialización del grafo de dependencias (antes inexistente)
@@ -19,24 +27,40 @@ class PMAPEngine:
         self._init_db()
 
     def _init_db(self):
-        with duckdb.connect(self.db_path) as con:
-            # [!] AJUSTE DE HARDWARE: Forzar a DuckDB a respetar el límite de memoria del NUC
-            con.execute("SET memory_limit = '2GB';")
-            con.execute("SET threads = 2;")
-            con.execute("CREATE TABLE IF NOT EXISTS history (idx INTEGER PRIMARY KEY, role VARCHAR, content TEXT, tk INTEGER)")
-            con.execute("CREATE TABLE IF NOT EXISTS vulns (idx INTEGER, severity VARCHAR, type VARCHAR, description TEXT)")
+        if HAS_DUCKDB:
+            with duckdb.connect(self.db_path) as con:
+                # [!] AJUSTE DE HARDWARE: Forzar a DuckDB a respetar el límite de memoria del NUC
+                con.execute("SET memory_limit = '2GB';")
+                con.execute("SET threads = 2;")
+                con.execute("CREATE TABLE IF NOT EXISTS history (idx INTEGER PRIMARY KEY, role VARCHAR, content TEXT, tk INTEGER)")
+                con.execute("CREATE TABLE IF NOT EXISTS vulns (idx INTEGER, severity VARCHAR, type VARCHAR, description TEXT)")
+        else:
+            # Fallback a SQLite en WebAssembly / Entorno local sin DuckDB
+            with sqlite3.connect(self.db_path) as con:
+                con.execute("CREATE TABLE IF NOT EXISTS history (idx INTEGER PRIMARY KEY, role VARCHAR, content TEXT, tk INTEGER)")
+                con.execute("CREATE TABLE IF NOT EXISTS vulns (idx INTEGER, severity VARCHAR, type VARCHAR, description TEXT)")
 
     def ingest_structured_data(self, turns: List[Dict[str, Any]]):
-        with duckdb.connect(self.db_path) as con:
-            con.execute("SET memory_limit = '2GB';")
-            con.execute("SET threads = 2;")
-            con.execute("DELETE FROM history")
-            for i, t in enumerate(turns):
-                tk = len(t['content']) // 4
-                con.execute("""
-                    INSERT INTO history VALUES (?, ?, ?, ?) 
-                    ON CONFLICT (idx) DO UPDATE SET role=EXCLUDED.role, content=EXCLUDED.content, tk=EXCLUDED.tk
-                """, [i, t['role'], t['content'], tk])
+        if HAS_DUCKDB:
+            with duckdb.connect(self.db_path) as con:
+                con.execute("SET memory_limit = '2GB';")
+                con.execute("SET threads = 2;")
+                con.execute("DELETE FROM history")
+                for i, t in enumerate(turns):
+                    tk = len(t['content']) // 4
+                    con.execute("""
+                        INSERT INTO history VALUES (?, ?, ?, ?) 
+                        ON CONFLICT (idx) DO UPDATE SET role=EXCLUDED.role, content=EXCLUDED.content, tk=EXCLUDED.tk
+                    """, [i, t['role'], t['content'], tk])
+        else:
+            with sqlite3.connect(self.db_path) as con:
+                con.execute("DELETE FROM history")
+                for i, t in enumerate(turns):
+                    tk = len(t['content']) // 4
+                    con.execute("""
+                        INSERT INTO history VALUES (?, ?, ?, ?) 
+                        ON CONFLICT (idx) DO UPDATE SET role=excluded.role, content=excluded.content, tk=excluded.tk
+                    """, [i, t['role'], t['content'], tk])
 
     def ingest_json_history(self, file_path: str):
         """Ingesta directa desde archivo JSON para el CLI."""
@@ -121,9 +145,11 @@ class PMAPEngine:
             "..."  # Elipsis sueltas en código
         ]
 
-        with duckdb.connect(self.db_path) as con:
-            con.execute("SET memory_limit = '2GB';")
-            con.execute("SET threads = 2;")
+        db_conn = duckdb.connect(self.db_path) if HAS_DUCKDB else sqlite3.connect(self.db_path)
+        with db_conn as con:
+            if HAS_DUCKDB:
+                con.execute("SET memory_limit = '2GB';")
+                con.execute("SET threads = 2;")
             con.execute("DELETE FROM vulns")
             rows = con.execute("SELECT * FROM history ORDER BY idx").fetchall()
             estado_error_previo = False
@@ -180,7 +206,7 @@ class PMAPEngine:
                         
                     estado_error_previo = False
 
-            # Persistir vulnerabilidades en DuckDB
+            # Persistir vulnerabilidades
             for i, v in enumerate(vulnerabilities):
                 con.execute(
                     "INSERT INTO vulns VALUES (?, ?, ?, ?)",
@@ -202,3 +228,92 @@ class PMAPEngine:
                 "chart_data": chart,
                 "graph_data": graph_summary
             }
+
+
+def run_forensic_analysis(chat_text: str) -> str:
+    """
+    Función de entrada global limpia adaptada para Pyodide (Wasm) en el navegador.
+    Acepta un string (ya sea JSON o texto crudo) y devuelve los resultados formateados en JSON.
+    """
+    import json
+    
+    # 1. Intentar parsear como JSON
+    try:
+        data = json.loads(chat_text)
+        if isinstance(data, dict) and "turns" in data:
+            turns = data["turns"]
+        elif isinstance(data, list):
+            turns = data
+        else:
+            turns = [{"role": "user", "content": chat_text}]
+    except Exception:
+        # Fallback a parseo heurístico si es texto plano crudo
+        turns = []
+        lines = chat_text.split("\n")
+        current_role = "user"
+        current_content = []
+        for line in lines:
+            line_stripped = line.strip()
+            line_lower = line_stripped.lower()
+            if line_lower.startswith("user:") or line_lower.startswith("tú:") or line_lower.startswith("usuario:") or line_lower.startswith("**tú**:") or line_lower.startswith("**usuario**:") or line_lower.startswith("**user**:"):
+                if current_content:
+                    turns.append({"role": current_role, "content": "\n".join(current_content).strip()})
+                current_role = "user"
+                # Extraer texto tras el delimitador de rol
+                parts = line.split(":", 1)
+                current_content = [parts[1]] if len(parts) > 1 else []
+            elif line_lower.startswith("model:") or line_lower.startswith("assistant:") or line_lower.startswith("gemini:") or line_lower.startswith("modelo:") or line_lower.startswith("**modelo**:") or line_lower.startswith("**gemini**:") or line_lower.startswith("**assistant**:"):
+                if current_content:
+                    turns.append({"role": current_role, "content": "\n".join(current_content).strip()})
+                current_role = "model"
+                # Extraer texto tras el delimitador de rol
+                parts = line.split(":", 1)
+                current_content = [parts[1]] if len(parts) > 1 else []
+            else:
+                current_content.append(line)
+        if current_content:
+            turns.append({"role": current_role, "content": "\n".join(current_content).strip()})
+        if not turns:
+            turns = [{"role": "user", "content": chat_text}]
+
+    # 2. Purificar la estructura
+    flat_turns = []
+    for i, t in enumerate(turns):
+        role = t.get("role", "user")
+        if "parts" in t:
+            content = "".join([p.get("text", "") for p in t["parts"]])
+        else:
+            content = t.get("content", "")
+        
+        # Mapear rol a 'user' o 'model'
+        clean_role = "model" if any(x in str(role).lower() for x in ["model", "assistant", "modelo", "asistente"]) else "user"
+        flat_turns.append({
+            "role": clean_role,
+            "content": content
+        })
+
+    # 3. Inicializar el motor (SQLite en memoria automático bajo Pyodide)
+    engine = PMAPEngine()
+    engine.ingest_structured_data(flat_turns)
+    results = engine.run_forensic_audit()
+
+    # 4. Derivar indicadores de alerta temprana (early warning)
+    critical_vulns = [v for v in results.get("vulnerabilities", []) if v.get("severity") == "CRITICAL"]
+    total_tokens = results.get("meta", {}).get("total_tokens_consumed", 0)
+
+    if len(critical_vulns) > 0 or total_tokens > (0.8 * 128000):
+        index = "CRITICAL"
+        is_critical = True
+        reason = "Se detectaron patrones de amnesia estructural o un volumen de tokens crítico que amenaza la retención del contexto."
+    else:
+        index = "OPTIMAL"
+        is_critical = False
+        reason = "Integridad estructural y retención cognitiva dentro de parámetros saludables."
+
+    results["early_warning"] = {
+        "index": index,
+        "is_critical": is_critical,
+        "reason": reason
+    }
+
+    return json.dumps(results, ensure_ascii=False)
