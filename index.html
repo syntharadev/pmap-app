@@ -325,9 +325,9 @@ http://googleusercontent.com/immersive_entry_chip/0
                 log("Cargando motor forense analítico embebido...");
                 const code = document.getElementById("python-analyzer").textContent;
 
-                pyodideInstance.FS.mkdirTree("pmap_core/pmap");
-                pyodideInstance.FS.writeFile("pmap_core/pmap/analyzer.py", code);
-                pyodideInstance.FS.writeFile("pmap_core/pmap/__init__.py", "");
+                pyodideInstance.FS.mkdirTree("/home/pyodide/pmap_core/pmap");
+                pyodideInstance.FS.writeFile("/home/pyodide/pmap_core/pmap/analyzer.py", code);
+                pyodideInstance.FS.writeFile("/home/pyodide/pmap_core/pmap/__init__.py", "");
 
                 log("PMAP Engine listo para autopsia Zero-Knowledge.", "success");
                 document.getElementById('status').innerText = "STANDBY";
@@ -355,7 +355,8 @@ http://googleusercontent.com/immersive_entry_chip/0
                     pyodideInstance.globals.set("chat_text_input", chatText);
                     const pyCode = `
 import sys
-sys.path.append('.')
+if '/home/pyodide' not in sys.path:
+    sys.path.append('/home/pyodide')
 from pmap_core.pmap.analyzer import run_forensic_analysis
 run_forensic_analysis(chat_text_input)
 `;
