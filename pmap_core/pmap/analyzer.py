@@ -16,51 +16,46 @@ from typing import List, Dict, Any
 
 class PMAPEngine:
     def __init__(self, max_context_window: int = 128000):
-        if HAS_DUCKDB:
-            self.db_path = "pmap_forensic.duckdb"
-        else:
-            self.db_path = ":memory:"
         self.max_context = max_context_window
         self.ast_inventory = set()
-        # [FIX] Inicialización del grafo de dependencias (antes inexistente)
         self.graph = nx.DiGraph()
+        
+        if HAS_DUCKDB:
+            self.db_path = "pmap_forensic.duckdb"
+            self.con = duckdb.connect(self.db_path)
+            # [!] AJUSTE DE HARDWARE: Forzar a DuckDB a respetar el límite de memoria del NUC
+            self.con.execute("SET memory_limit = '2GB';")
+            self.con.execute("SET threads = 2;")
+        else:
+            self.db_path = ":memory:"
+            self.con = sqlite3.connect(self.db_path)
+            
         self._init_db()
 
+    def __del__(self):
+        try:
+            self.con.close()
+        except Exception:
+            pass
+
     def _init_db(self):
-        if HAS_DUCKDB:
-            with duckdb.connect(self.db_path) as con:
-                # [!] AJUSTE DE HARDWARE: Forzar a DuckDB a respetar el límite de memoria del NUC
-                con.execute("SET memory_limit = '2GB';")
-                con.execute("SET threads = 2;")
-                con.execute("CREATE TABLE IF NOT EXISTS history (idx INTEGER PRIMARY KEY, role VARCHAR, content TEXT, tk INTEGER)")
-                con.execute("CREATE TABLE IF NOT EXISTS vulns (idx INTEGER, severity VARCHAR, type VARCHAR, description TEXT)")
-        else:
-            # Fallback a SQLite en WebAssembly / Entorno local sin DuckDB
-            with sqlite3.connect(self.db_path) as con:
-                con.execute("CREATE TABLE IF NOT EXISTS history (idx INTEGER PRIMARY KEY, role VARCHAR, content TEXT, tk INTEGER)")
-                con.execute("CREATE TABLE IF NOT EXISTS vulns (idx INTEGER, severity VARCHAR, type VARCHAR, description TEXT)")
+        self.con.execute("CREATE TABLE IF NOT EXISTS history (idx INTEGER PRIMARY KEY, role VARCHAR, content TEXT, tk INTEGER)")
+        self.con.execute("CREATE TABLE IF NOT EXISTS vulns (idx INTEGER, severity VARCHAR, type VARCHAR, description TEXT)")
 
     def ingest_structured_data(self, turns: List[Dict[str, Any]]):
-        if HAS_DUCKDB:
-            with duckdb.connect(self.db_path) as con:
-                con.execute("SET memory_limit = '2GB';")
-                con.execute("SET threads = 2;")
-                con.execute("DELETE FROM history")
-                for i, t in enumerate(turns):
-                    tk = len(t['content']) // 4
-                    con.execute("""
-                        INSERT INTO history VALUES (?, ?, ?, ?) 
-                        ON CONFLICT (idx) DO UPDATE SET role=EXCLUDED.role, content=EXCLUDED.content, tk=EXCLUDED.tk
-                    """, [i, t['role'], t['content'], tk])
-        else:
-            with sqlite3.connect(self.db_path) as con:
-                con.execute("DELETE FROM history")
-                for i, t in enumerate(turns):
-                    tk = len(t['content']) // 4
-                    con.execute("""
-                        INSERT INTO history VALUES (?, ?, ?, ?) 
-                        ON CONFLICT (idx) DO UPDATE SET role=excluded.role, content=excluded.content, tk=excluded.tk
-                    """, [i, t['role'], t['content'], tk])
+        self.con.execute("DELETE FROM history")
+        for i, t in enumerate(turns):
+            tk = len(t['content']) // 4
+            if HAS_DUCKDB:
+                self.con.execute("""
+                    INSERT INTO history VALUES (?, ?, ?, ?) 
+                    ON CONFLICT (idx) DO UPDATE SET role=EXCLUDED.role, content=EXCLUDED.content, tk=EXCLUDED.tk
+                """, [i, t['role'], t['content'], tk])
+            else:
+                self.con.execute("""
+                    INSERT INTO history VALUES (?, ?, ?, ?) 
+                    ON CONFLICT (idx) DO UPDATE SET role=excluded.role, content=excluded.content, tk=excluded.tk
+                """, [i, t['role'], t['content'], tk])
 
     def ingest_json_history(self, file_path: str):
         """Ingesta directa desde archivo JSON para el CLI."""
@@ -145,11 +140,8 @@ class PMAPEngine:
             "..."  # Elipsis sueltas en código
         ]
 
-        db_conn = duckdb.connect(self.db_path) if HAS_DUCKDB else sqlite3.connect(self.db_path)
-        with db_conn as con:
-            if HAS_DUCKDB:
-                con.execute("SET memory_limit = '2GB';")
-                con.execute("SET threads = 2;")
+        con = self.con
+        if True:
             con.execute("DELETE FROM vulns")
             rows = con.execute("SELECT * FROM history ORDER BY idx").fetchall()
             estado_error_previo = False
